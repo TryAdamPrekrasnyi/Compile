@@ -1,0 +1,46 @@
+
+name: Compile Universal Russia
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'gamemodes/**'
+      - 'include/**'
+      - 'pawno/**'
+      - '.github/workflows/compile-pawn.yml'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compile Pawn
+        shell: pwsh
+        run: |
+          $pawncc = "pawno/pawncc.exe"
+
+          if (!(Test-Path $pawncc)) {
+            throw "Compiler not found: $pawncc"
+          }
+
+          & $pawncc "gamemodes/bykranin.pwn" "-iinclude" "-ipawno/include" "-ogamemodes/bykranin.amx"
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Compilation failed: $LASTEXITCODE"
+          }
+
+          if (!(Test-Path "gamemodes/bykranin.amx")) {
+            throw "AMX was not created"
+          }
+
+      - name: Upload AMX
+        uses: actions/upload-artifact@v4
+        with:
+          name: Universal-Russia-AMX
+          path: gamemodes/bykranin.amx
+          if-no-files-found: error
